@@ -30,7 +30,6 @@ body {
 .header h1 { font-size:26px; font-weight:900; color:#0077b6; margin-bottom:4px; }
 .header .sub { font-size:16px; color:#555; }
 
-/* 今日課程卡 */
 .today-course {
   background:#e8f4f8; border:2px solid #0077b6;
   border-radius:12px; padding:18px 20px; margin-bottom:24px;
@@ -102,7 +101,6 @@ body {
 .result-msg.success { background:#e8f5e9; border:2px solid #81c784; color:#2e7d32; }
 .result-msg.error { background:#ffebee; border:2px solid #e57373; color:#c62828; }
 
-/* Modal */
 .modal-overlay {
   display:none; position:fixed; top:0; left:0; width:100%; height:100%;
   background:rgba(0,0,0,0.4); z-index:100;
@@ -144,7 +142,7 @@ body {
       <p class="sub">AI 智慧職能應用培育課程 ─ 簽到系統</p>
     </div>
 
-    <div id="todayCourseCard"></div>
+    <div id="todayCourseCard"><div class="loading" style="text-align:center;padding:24px;color:#888;">載入中...</div></div>
 
     <div id="checkinForm" style="display:none;">
       <div class="form-group">
@@ -176,7 +174,6 @@ body {
       </div>
 
       <button class="submit-btn" id="submitBtn" onclick="doCheckIn()">簽 到</button>
-
       <div class="result-msg" id="resultMsg"></div>
     </div>
 
@@ -184,7 +181,6 @@ body {
   </div>
 </div>
 
-<!-- Modal -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
   <div class="modal" id="modalBox">
     <h2>📋 已簽到名單</h2>
@@ -195,49 +191,47 @@ body {
 </div>
 
 <script>
-// 本機預覽模擬層
-if (typeof google === 'undefined') {
-  var google = { script: { run: {} } };
-  var _handler = {
-    get: function(target, prop) {
-      if (prop === 'withSuccessHandler') return function(fn) { target._s = fn; return new Proxy(target, _handler); };
-      if (prop === 'withFailureHandler') return function(fn) { target._f = fn; return new Proxy(target, _handler); };
-      if (prop === 'getTodayCourse') return function() { if (target._s) target._s({ found:true, name:'生成式 AI 工作術', desc:'Prompt 技巧、個人助理、製作簡報、數據分析——用 AI 重塑日常工作流程。', rocDate:'115/06/04（週四）' }); };
-      if (prop === 'lookupEmployee') return function(id) {
-        var demo = { 'A00535': { found:true, name:'黃秀玲', unit:'企劃組', title:'組長' } };
-        if (target._s) target._s(demo[id.toUpperCase().trim()] || { found:false });
-      };
-      if (prop === 'checkIn') return function() { if (target._s) target._s({ success:true, message:'（本機預覽）簽到成功' }); };
-      if (prop === 'getAttendanceList') return function() { if (target._s) target._s([]); };
-      return function() {};
-    }
-  };
-  google.script.run = new Proxy({}, _handler);
-}
+// ===== Apps Script 部署網址 =====
+var API_URL = 'https://script.google.com/macros/s/AKfycbyp7RgLjzTGXcz5YePjtQzbVl-myTbnM6I1SmiZFz3CwpfEhhXBa_G3nm1Yjn6yo9n9/exec';
 
 var ALL_COURSES = ['生成式 AI 工作術', '影音自造時代', '零程式碼革命'];
 var todayCourse = '';
 var currentInfo = null;
 var debounceTimer = null;
 
+// 通用 API 呼叫
+function callAPI(params, callback) {
+  var qs = Object.keys(params).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  }).join('&');
+  var url = API_URL + '?' + qs;
+
+  fetch(url, { redirect: 'follow' })
+    .then(function(res) { return res.json(); })
+    .then(function(data) { callback(null, data); })
+    .catch(function(err) { callback(err, null); });
+}
+
 // 初始化：取得今日課程
-google.script.run
-  .withSuccessHandler(function(result) {
-    var card = document.getElementById('todayCourseCard');
-    if (result.found) {
-      todayCourse = result.name;
-      card.innerHTML = '<div class="today-course">'
-        + '<div class="label">📅 今日課程</div>'
-        + '<div class="name">' + result.name + '</div>'
-        + '<div class="desc">' + result.desc + '</div>'
-        + '<div class="date">' + result.rocDate + '</div>'
-        + '</div>';
-      document.getElementById('checkinForm').style.display = 'block';
-    } else {
-      card.innerHTML = '<div class="no-course">今日無課程，無需簽到</div>';
-    }
-  })
-  .getTodayCourse();
+callAPI({ action: 'getTodayCourse' }, function(err, result) {
+  var card = document.getElementById('todayCourseCard');
+  if (err) {
+    card.innerHTML = '<div class="no-course">無法連線伺服器</div>';
+    return;
+  }
+  if (result.found) {
+    todayCourse = result.name;
+    card.innerHTML = '<div class="today-course">'
+      + '<div class="label">📅 今日課程</div>'
+      + '<div class="name">' + result.name + '</div>'
+      + '<div class="desc">' + result.desc + '</div>'
+      + '<div class="date">' + result.rocDate + '</div>'
+      + '</div>';
+    document.getElementById('checkinForm').style.display = 'block';
+  } else {
+    card.innerHTML = '<div class="no-course">今日無課程，無需簽到</div>';
+  }
+});
 
 var empIdInput = document.getElementById('empId');
 empIdInput.addEventListener('input', function() {
@@ -259,47 +253,46 @@ function resetUI() {
 }
 
 function doLookup(val) {
-  google.script.run
-    .withSuccessHandler(function(result) {
-      if (result.found) {
-        currentInfo = result;
-        document.getElementById('dispName').textContent = result.name;
-        document.getElementById('dispUnit').textContent = result.unit;
-        document.getElementById('dispTitle').textContent = result.title;
-        document.getElementById('infoBar').style.display = 'block';
-      } else {
-        currentInfo = { found: false };
-        document.getElementById('walkinNotice').style.display = 'block';
-        document.getElementById('walkinFields').style.display = 'block';
-      }
-      document.getElementById('submitBtn').style.display = 'block';
-    })
-    .withFailureHandler(function(err) {
-      showResult('查詢失敗：' + err.message, false);
-    })
-    .lookupEmployee(val);
+  callAPI({ action: 'lookup', empId: val }, function(err, result) {
+    if (err) { showResult('查詢失敗', false); return; }
+    if (result.found) {
+      currentInfo = result;
+      document.getElementById('dispName').textContent = result.name;
+      document.getElementById('dispUnit').textContent = result.unit;
+      document.getElementById('dispTitle').textContent = result.title;
+      document.getElementById('infoBar').style.display = 'block';
+    } else {
+      currentInfo = { found: false };
+      document.getElementById('walkinNotice').style.display = 'block';
+      document.getElementById('walkinFields').style.display = 'block';
+    }
+    document.getElementById('submitBtn').style.display = 'block';
+  });
 }
 
 function doCheckIn() {
   var empId = document.getElementById('empId').value.trim();
   if (!empId) { showResult('請輸入人事號', false); return; }
 
-  var payload = {
+  var params = {
+    action: 'checkIn',
     empId: empId,
     course: todayCourse,
-    name: '', unit: '', title: '',
-    isWalkIn: false
+    name: '',
+    unit: '',
+    title: '',
+    isWalkIn: 'false'
   };
 
   if (currentInfo && currentInfo.found) {
-    payload.name = currentInfo.name;
-    payload.unit = currentInfo.unit;
-    payload.title = currentInfo.title;
+    params.name = currentInfo.name;
+    params.unit = currentInfo.unit;
+    params.title = currentInfo.title;
   } else {
-    payload.isWalkIn = true;
-    payload.name = document.getElementById('walkinName').value.trim();
-    payload.unit = document.getElementById('walkinUnit').value.trim();
-    if (!payload.name || !payload.unit) {
+    params.isWalkIn = 'true';
+    params.name = document.getElementById('walkinName').value.trim();
+    params.unit = document.getElementById('walkinUnit').value.trim();
+    if (!params.name || !params.unit) {
       showResult('請填寫姓名與單位', false);
       return;
     }
@@ -309,25 +302,23 @@ function doCheckIn() {
   btn.disabled = true;
   btn.textContent = '簽到中...';
 
-  google.script.run
-    .withSuccessHandler(function(result) {
-      showResult(result.message, result.success);
+  callAPI(params, function(err, result) {
+    if (err) {
+      showResult('簽到失敗，請重試', false);
       btn.disabled = false;
       btn.textContent = '簽 到';
-      if (result.success) {
-        document.getElementById('empId').value = '';
-        resetUI();
-        empIdInput.focus();
-        // 自動顯示已簽到名單
-        openAttendanceModal();
-      }
-    })
-    .withFailureHandler(function(err) {
-      showResult('簽到失敗：' + err.message, false);
-      btn.disabled = false;
-      btn.textContent = '簽 到';
-    })
-    .checkIn(payload);
+      return;
+    }
+    showResult(result.message, result.success);
+    btn.disabled = false;
+    btn.textContent = '簽 到';
+    if (result.success) {
+      document.getElementById('empId').value = '';
+      resetUI();
+      empIdInput.focus();
+      openAttendanceModal();
+    }
+  });
 }
 
 function showResult(msg, success) {
@@ -341,8 +332,7 @@ function showResult(msg, success) {
 function openAttendanceModal() {
   document.getElementById('modalOverlay').classList.add('show');
   renderModalTabs();
-  var defaultCourse = todayCourse || ALL_COURSES[0];
-  loadAttendance(defaultCourse);
+  loadAttendance(todayCourse || ALL_COURSES[0]);
 }
 
 function renderModalTabs() {
@@ -372,25 +362,24 @@ function loadAttendance(course) {
   }
   document.getElementById('modalContent').innerHTML = '<div class="loading">載入中...</div>';
 
-  google.script.run
-    .withSuccessHandler(function(list) {
-      var html = '<div class="count">共 ' + list.length + ' 人已簽到</div>';
-      if (list.length === 0) {
-        html += '<div style="text-align:center;padding:24px;color:#888;">尚無簽到紀錄</div>';
-      } else {
-        html += '<table><tr><th>#</th><th>姓名</th><th>單位</th><th>職稱</th><th>類別</th><th>時間</th></tr>';
-        for (var i = 0; i < list.length; i++) {
-          var r = list[i];
-          html += '<tr><td>' + (i+1) + '</td><td>' + r.name + '</td><td>' + r.unit + '</td><td>' + r.title + '</td><td>' + r.type + '</td><td style="font-size:13px;color:#888;">' + r.time + '</td></tr>';
-        }
-        html += '</table>';
+  callAPI({ action: 'attendance', course: course }, function(err, list) {
+    if (err || !Array.isArray(list)) {
+      document.getElementById('modalContent').innerHTML = '<div style="color:red;padding:16px;">載入失敗</div>';
+      return;
+    }
+    var html = '<div class="count">共 ' + list.length + ' 人已簽到</div>';
+    if (list.length === 0) {
+      html += '<div style="text-align:center;padding:24px;color:#888;">尚無簽到紀錄</div>';
+    } else {
+      html += '<table><tr><th>#</th><th>姓名</th><th>單位</th><th>職稱</th><th>類別</th><th>時間</th></tr>';
+      for (var i = 0; i < list.length; i++) {
+        var r = list[i];
+        html += '<tr><td>' + (i+1) + '</td><td>' + r.name + '</td><td>' + r.unit + '</td><td>' + r.title + '</td><td>' + r.type + '</td><td style="font-size:13px;color:#888;">' + r.time + '</td></tr>';
       }
-      document.getElementById('modalContent').innerHTML = html;
-    })
-    .withFailureHandler(function(err) {
-      document.getElementById('modalContent').innerHTML = '<div style="color:red;padding:16px;">載入失敗：' + err.message + '</div>';
-    })
-    .getAttendanceList(course);
+      html += '</table>';
+    }
+    document.getElementById('modalContent').innerHTML = html;
+  });
 }
 
 function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
