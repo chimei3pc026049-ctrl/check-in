@@ -315,10 +315,11 @@ function doCheckIn() {
       btn.disabled = false;
       btn.textContent = '簽 到';
       if (result.success) {
-        // 清空輸入，準備下一位
         document.getElementById('empId').value = '';
         resetUI();
         empIdInput.focus();
+        // 自動顯示已簽到名單
+        openAttendanceModal();
       }
     })
     .withFailureHandler(function(err) {
