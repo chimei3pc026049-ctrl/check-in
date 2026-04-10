@@ -9,32 +9,43 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
   font-family:'Noto Sans TC',sans-serif;
-  background:#f5f5f5;
-  color:#1a1a1a;
+  background:#f5f5f5; color:#1a1a1a;
   min-height:100vh;
   display:flex; justify-content:center; align-items:flex-start;
   padding:24px 16px;
 }
 .container { width:100%; max-width:580px; }
 .card {
-  background:#fff;
-  border-radius:16px;
+  background:#fff; border-radius:16px;
   padding:36px 32px;
   box-shadow:0 2px 16px rgba(0,0,0,0.08);
   margin-bottom:16px;
 }
-.header { text-align:center; margin-bottom:32px; }
+.header { text-align:center; margin-bottom:28px; }
 .header .tag {
-  display:inline-block;
-  font-size:13px; letter-spacing:1px;
+  display:inline-block; font-size:13px; letter-spacing:1px;
   color:#fff; background:#0077b6;
-  padding:5px 16px; border-radius:20px; margin-bottom:14px;
-  font-weight:700;
+  padding:5px 16px; border-radius:20px; margin-bottom:14px; font-weight:700;
 }
-.header h1 {
-  font-size:26px; font-weight:900; color:#0077b6; margin-bottom:6px;
+.header h1 { font-size:26px; font-weight:900; color:#0077b6; margin-bottom:4px; }
+.header .sub { font-size:16px; color:#555; }
+
+/* 今日課程卡 */
+.today-course {
+  background:#e8f4f8; border:2px solid #0077b6;
+  border-radius:12px; padding:18px 20px; margin-bottom:24px;
+  text-align:center;
 }
-.header p { font-size:16px; color:#555; }
+.today-course .label { font-size:13px; color:#0077b6; font-weight:700; margin-bottom:6px; letter-spacing:1px; }
+.today-course .name { font-size:22px; font-weight:900; color:#0077b6; margin-bottom:6px; }
+.today-course .desc { font-size:15px; color:#555; line-height:1.6; margin-bottom:4px; }
+.today-course .date { font-size:14px; color:#888; }
+
+.no-course {
+  background:#fff3e0; border:2px solid #ffcc80;
+  border-radius:12px; padding:24px 20px; margin-bottom:24px;
+  text-align:center; font-size:18px; color:#e65100; font-weight:700;
+}
 
 .form-group { margin-bottom:20px; }
 .form-group label { display:block; font-size:16px; font-weight:700; color:#333; margin-bottom:8px; }
@@ -46,12 +57,10 @@ body {
   transition:border-color 0.2s;
 }
 .form-group input:focus { border-color:#0077b6; }
-.form-group input[readonly] { background:#f0f0f0; }
 
 .info-bar {
   display:none;
-  background:#e8f4f8;
-  border:2px solid #b2d8e8;
+  background:#e8f4f8; border:2px solid #b2d8e8;
   border-radius:10px; padding:16px 18px; margin-bottom:20px;
 }
 .info-bar .info-row { display:flex; gap:20px; flex-wrap:wrap; }
@@ -60,38 +69,15 @@ body {
 
 .walkin-notice {
   display:none;
-  background:#fff3e0;
-  border:2px solid #ffcc80;
+  background:#fff3e0; border:2px solid #ffcc80;
   border-radius:10px; padding:14px 18px; margin-bottom:20px;
   font-size:16px; color:#e65100; font-weight:500;
 }
-
 .walkin-fields { display:none; }
-
-.course-section { display:none; margin-bottom:20px; }
-.course-section .section-label { font-size:16px; font-weight:700; color:#333; margin-bottom:12px; display:block; }
-.course-btn {
-  display:block; width:100%; padding:14px 18px; margin-bottom:10px;
-  background:#f9fafb; border:2px solid #ddd;
-  border-radius:10px; color:#333; font-size:17px;
-  font-family:'Noto Sans TC',sans-serif;
-  cursor:pointer; transition:all 0.2s; text-align:left;
-  font-weight:500;
-}
-.course-btn:hover:not(.disabled) { border-color:#0077b6; background:#e8f4f8; }
-.course-btn.selected { border-color:#0077b6; background:#0077b6; color:#fff; font-weight:700; }
-.course-btn.disabled { opacity:0.4; cursor:not-allowed; background:#f0f0f0; }
-.course-btn .date-tag {
-  font-size:13px; font-weight:400; color:#888;
-  margin-left:8px;
-}
-.course-btn.selected .date-tag { color:rgba(255,255,255,0.7); }
-.course-btn.today-tag { border-left:4px solid #0077b6; }
 
 .submit-btn {
   display:none; width:100%; padding:16px;
-  background:#0077b6;
-  border:none; border-radius:12px; color:#fff;
+  background:#0077b6; border:none; border-radius:12px; color:#fff;
   font-size:19px; font-weight:700; cursor:pointer;
   font-family:'Noto Sans TC',sans-serif;
   transition:background 0.2s;
@@ -105,8 +91,7 @@ body {
   border-radius:12px; color:#0077b6;
   font-size:17px; font-weight:700; cursor:pointer;
   font-family:'Noto Sans TC',sans-serif;
-  transition:all 0.2s;
-  margin-top:12px;
+  transition:all 0.2s; margin-top:12px;
 }
 .list-btn:hover { background:#e8f4f8; }
 
@@ -117,7 +102,7 @@ body {
 .result-msg.success { background:#e8f5e9; border:2px solid #81c784; color:#2e7d32; }
 .result-msg.error { background:#ffebee; border:2px solid #e57373; color:#c62828; }
 
-/* 簽到名單 Modal */
+/* Modal */
 .modal-overlay {
   display:none; position:fixed; top:0; left:0; width:100%; height:100%;
   background:rgba(0,0,0,0.4); z-index:100;
@@ -156,51 +141,50 @@ body {
     <div class="header">
       <div class="tag">SIGN IN</div>
       <h1>數位醫管新紀元</h1>
-      <p>AI 智慧職能應用培育課程 ─ 簽到系統</p>
+      <p class="sub">AI 智慧職能應用培育課程 ─ 簽到系統</p>
     </div>
 
-    <div class="form-group">
-      <label>人事號</label>
-      <input type="text" id="empId" placeholder="請輸入人事號（大小寫皆可）" autocomplete="off">
-    </div>
+    <div id="todayCourseCard"></div>
 
-    <div class="info-bar" id="infoBar">
-      <div class="info-row">
-        <div class="info-item">姓名：<span id="dispName"></span></div>
-        <div class="info-item">單位：<span id="dispUnit"></span></div>
-        <div class="info-item">職稱：<span id="dispTitle"></span></div>
-      </div>
-    </div>
-
-    <div class="walkin-notice" id="walkinNotice">
-      🎉 歡迎參與！此人事號不在報名名單中，請填寫姓名與單位以完成簽到。
-    </div>
-
-    <div class="walkin-fields" id="walkinFields">
+    <div id="checkinForm" style="display:none;">
       <div class="form-group">
-        <label>姓名</label>
-        <input type="text" id="walkinName" placeholder="請輸入姓名">
+        <label>人事號</label>
+        <input type="text" id="empId" placeholder="請輸入人事號（大小寫皆可）" autocomplete="off">
       </div>
-      <div class="form-group">
-        <label>單位</label>
-        <input type="text" id="walkinUnit" placeholder="請輸入單位">
+
+      <div class="info-bar" id="infoBar">
+        <div class="info-row">
+          <div class="info-item">姓名：<span id="dispName"></span></div>
+          <div class="info-item">單位：<span id="dispUnit"></span></div>
+          <div class="info-item">職稱：<span id="dispTitle"></span></div>
+        </div>
       </div>
+
+      <div class="walkin-notice" id="walkinNotice">
+        🎉 歡迎參與！此人事號不在報名名單中，請填寫姓名與單位以完成簽到。
+      </div>
+
+      <div class="walkin-fields" id="walkinFields">
+        <div class="form-group">
+          <label>姓名</label>
+          <input type="text" id="walkinName" placeholder="請輸入姓名">
+        </div>
+        <div class="form-group">
+          <label>單位</label>
+          <input type="text" id="walkinUnit" placeholder="請輸入單位">
+        </div>
+      </div>
+
+      <button class="submit-btn" id="submitBtn" onclick="doCheckIn()">簽 到</button>
+
+      <div class="result-msg" id="resultMsg"></div>
     </div>
-
-    <div class="course-section" id="courseSection">
-      <label class="section-label">請選擇簽到課程</label>
-      <div id="courseList"></div>
-    </div>
-
-    <button class="submit-btn" id="submitBtn" onclick="doCheckIn()">簽 到</button>
-
-    <div class="result-msg" id="resultMsg"></div>
 
     <button class="list-btn" onclick="openAttendanceModal()">📋 查看已簽到名單</button>
   </div>
 </div>
 
-<!-- 簽到名單 Modal -->
+<!-- Modal -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
   <div class="modal" id="modalBox">
     <h2>📋 已簽到名單</h2>
@@ -211,43 +195,49 @@ body {
 </div>
 
 <script>
-// 本機預覽用模擬層，部署到 Apps Script 後會使用真正的 google.script.run
+// 本機預覽模擬層
 if (typeof google === 'undefined') {
   var google = { script: { run: {} } };
-  var handler = {
+  var _handler = {
     get: function(target, prop) {
-      if (prop === 'withSuccessHandler') return function(fn) { target._success = fn; return new Proxy(target, handler); };
-      if (prop === 'withFailureHandler') return function(fn) { target._failure = fn; return new Proxy(target, handler); };
-      // mock backend calls
-      if (prop === 'getCourseDates') return function() { if (target._success) target._success({'生成式 AI 工作術':'2026/04/10','影音自造時代':'2026/05/14','零程式碼革命':'2026/05/21'}); };
-      if (prop === 'getTodayStr') return function() { if (target._success) target._success('2026/04/10'); };
+      if (prop === 'withSuccessHandler') return function(fn) { target._s = fn; return new Proxy(target, _handler); };
+      if (prop === 'withFailureHandler') return function(fn) { target._f = fn; return new Proxy(target, _handler); };
+      if (prop === 'getTodayCourse') return function() { if (target._s) target._s({ found:true, name:'生成式 AI 工作術', desc:'Prompt 技巧、個人助理、製作簡報、數據分析——用 AI 重塑日常工作流程。', rocDate:'115/06/04（週四）' }); };
       if (prop === 'lookupEmployee') return function(id) {
-        var key = id.toUpperCase().trim();
-        var demo = { 'A00535': { found:true, name:'黃秀玲', unit:'企劃組', title:'組長', courses:['生成式 AI 工作術','影音自造時代','零程式碼革命'] } };
-        if (target._success) target._success(demo[key] || { found: false });
+        var demo = { 'A00535': { found:true, name:'黃秀玲', unit:'企劃組', title:'組長' } };
+        if (target._s) target._s(demo[id.toUpperCase().trim()] || { found:false });
       };
-      if (prop === 'checkIn') return function() { if (target._success) target._success({ success:true, message:'（本機預覽）簽到成功' }); };
-      if (prop === 'getAttendanceList') return function() { if (target._success) target._success([]); };
+      if (prop === 'checkIn') return function() { if (target._s) target._s({ success:true, message:'（本機預覽）簽到成功' }); };
+      if (prop === 'getAttendanceList') return function() { if (target._s) target._s([]); };
       return function() {};
     }
   };
-  google.script.run = new Proxy({}, handler);
+  google.script.run = new Proxy({}, _handler);
 }
 
 var ALL_COURSES = ['生成式 AI 工作術', '影音自造時代', '零程式碼革命'];
-var courseDates = {};
-var todayStr = '';
+var todayCourse = '';
 var currentInfo = null;
-var selectedCourse = '';
 var debounceTimer = null;
 
-// 啟動時取得今日日期與課程日期
+// 初始化：取得今日課程
 google.script.run
-  .withSuccessHandler(function(d) { courseDates = d || {}; })
-  .getCourseDates();
-google.script.run
-  .withSuccessHandler(function(d) { todayStr = d; })
-  .getTodayStr();
+  .withSuccessHandler(function(result) {
+    var card = document.getElementById('todayCourseCard');
+    if (result.found) {
+      todayCourse = result.name;
+      card.innerHTML = '<div class="today-course">'
+        + '<div class="label">📅 今日課程</div>'
+        + '<div class="name">' + result.name + '</div>'
+        + '<div class="desc">' + result.desc + '</div>'
+        + '<div class="date">' + result.rocDate + '</div>'
+        + '</div>';
+      document.getElementById('checkinForm').style.display = 'block';
+    } else {
+      card.innerHTML = '<div class="no-course">今日無課程，無需簽到</div>';
+    }
+  })
+  .getTodayCourse();
 
 var empIdInput = document.getElementById('empId');
 empIdInput.addEventListener('input', function() {
@@ -261,11 +251,9 @@ empIdInput.addEventListener('input', function() {
 
 function resetUI() {
   currentInfo = null;
-  selectedCourse = '';
   document.getElementById('infoBar').style.display = 'none';
   document.getElementById('walkinNotice').style.display = 'none';
   document.getElementById('walkinFields').style.display = 'none';
-  document.getElementById('courseSection').style.display = 'none';
   document.getElementById('submitBtn').style.display = 'none';
   document.getElementById('resultMsg').style.display = 'none';
 }
@@ -284,8 +272,7 @@ function doLookup(val) {
         document.getElementById('walkinNotice').style.display = 'block';
         document.getElementById('walkinFields').style.display = 'block';
       }
-      renderCourses();
-      document.getElementById('courseSection').style.display = 'block';
+      document.getElementById('submitBtn').style.display = 'block';
     })
     .withFailureHandler(function(err) {
       showResult('查詢失敗：' + err.message, false);
@@ -293,56 +280,14 @@ function doLookup(val) {
     .lookupEmployee(val);
 }
 
-function renderCourses() {
-  var container = document.getElementById('courseList');
-  container.innerHTML = '';
-  for (var i = 0; i < ALL_COURSES.length; i++) {
-    var c = ALL_COURSES[i];
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'course-btn';
-    var dateStr = courseDates[c] || '';
-    var isToday = (dateStr === todayStr);
-
-    var label = c;
-    var dateHtml = dateStr ? ' <span class="date-tag">(' + dateStr + ')</span>' : '';
-    btn.innerHTML = label + dateHtml;
-    btn.setAttribute('data-course', c);
-
-    if (isToday) {
-      btn.classList.add('today-tag');
-      (function(courseName, button) {
-        button.onclick = function() { selectCourse(courseName, button); };
-      })(c, btn);
-    } else {
-      btn.classList.add('disabled');
-      btn.innerHTML = c + dateHtml + ' <span class="date-tag">— 非今日課程</span>';
-    }
-    container.appendChild(btn);
-  }
-}
-
-function selectCourse(courseName, btn) {
-  var btns = document.querySelectorAll('.course-btn');
-  for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('selected'); }
-  btn.classList.add('selected');
-  selectedCourse = courseName;
-  document.getElementById('submitBtn').style.display = 'block';
-}
-
 function doCheckIn() {
   var empId = document.getElementById('empId').value.trim();
-  if (!empId || !selectedCourse) {
-    showResult('請輸入人事號並選擇課程', false);
-    return;
-  }
+  if (!empId) { showResult('請輸入人事號', false); return; }
 
   var payload = {
     empId: empId,
-    course: selectedCourse,
-    name: '',
-    unit: '',
-    title: '',
+    course: todayCourse,
+    name: '', unit: '', title: '',
     isWalkIn: false
   };
 
@@ -370,10 +315,10 @@ function doCheckIn() {
       btn.disabled = false;
       btn.textContent = '簽 到';
       if (result.success) {
-        selectedCourse = '';
-        var btns = document.querySelectorAll('.course-btn');
-        for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('selected'); }
-        btn.style.display = 'none';
+        // 清空輸入，準備下一位
+        document.getElementById('empId').value = '';
+        resetUI();
+        empIdInput.focus();
       }
     })
     .withFailureHandler(function(err) {
@@ -392,17 +337,10 @@ function showResult(msg, success) {
 }
 
 // ===== 簽到名單 Modal =====
-var modalActiveCourse = '';
-
 function openAttendanceModal() {
   document.getElementById('modalOverlay').classList.add('show');
   renderModalTabs();
-  // 預設載入今日課程，若無則載入第一堂
-  var defaultCourse = '';
-  for (var i = 0; i < ALL_COURSES.length; i++) {
-    if (courseDates[ALL_COURSES[i]] === todayStr) { defaultCourse = ALL_COURSES[i]; break; }
-  }
-  if (!defaultCourse) defaultCourse = ALL_COURSES[0];
+  var defaultCourse = todayCourse || ALL_COURSES[0];
   loadAttendance(defaultCourse);
 }
 
@@ -423,8 +361,6 @@ function renderModalTabs() {
 }
 
 function loadAttendance(course) {
-  modalActiveCourse = course;
-  // highlight active tab
   var tabs = document.querySelectorAll('.tab-btn');
   for (var i = 0; i < tabs.length; i++) {
     if (tabs[i].getAttribute('data-course') === course) {
@@ -437,22 +373,14 @@ function loadAttendance(course) {
 
   google.script.run
     .withSuccessHandler(function(list) {
-      var html = '';
-      html += '<div class="count">共 ' + list.length + ' 人已簽到</div>';
+      var html = '<div class="count">共 ' + list.length + ' 人已簽到</div>';
       if (list.length === 0) {
         html += '<div style="text-align:center;padding:24px;color:#888;">尚無簽到紀錄</div>';
       } else {
         html += '<table><tr><th>#</th><th>姓名</th><th>單位</th><th>職稱</th><th>類別</th><th>時間</th></tr>';
         for (var i = 0; i < list.length; i++) {
           var r = list[i];
-          html += '<tr>';
-          html += '<td>' + (i + 1) + '</td>';
-          html += '<td>' + r.name + '</td>';
-          html += '<td>' + r.unit + '</td>';
-          html += '<td>' + r.title + '</td>';
-          html += '<td>' + r.type + '</td>';
-          html += '<td style="font-size:13px;color:#888;">' + r.time + '</td>';
-          html += '</tr>';
+          html += '<tr><td>' + (i+1) + '</td><td>' + r.name + '</td><td>' + r.unit + '</td><td>' + r.title + '</td><td>' + r.type + '</td><td style="font-size:13px;color:#888;">' + r.time + '</td></tr>';
         }
         html += '</table>';
       }
@@ -464,12 +392,8 @@ function loadAttendance(course) {
     .getAttendanceList(course);
 }
 
-function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('show');
-}
-function closeModalOutside(e) {
-  if (e.target === document.getElementById('modalOverlay')) closeModal();
-}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+function closeModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 </script>
 </body>
 </html>
