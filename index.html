@@ -61,10 +61,17 @@ body {
   display:none;
   background:#e8f4f8; border:2px solid #b2d8e8;
   border-radius:10px; padding:16px 18px; margin-bottom:20px;
+  position:relative;
 }
 .info-bar .info-row { display:flex; gap:20px; flex-wrap:wrap; }
 .info-bar .info-item { font-size:17px; color:#333; }
 .info-bar .info-item span { color:#0077b6; font-weight:700; }
+.info-bar .badge {
+  display:inline-block; margin-top:10px;
+  padding:4px 12px; border-radius:12px; font-size:13px; font-weight:700;
+}
+.info-bar .badge.enrolled { background:#c8e6c9; color:#2e7d32; }
+.info-bar .badge.walkin { background:#ffe0b2; color:#e65100; }
  
 .walkin-notice {
   display:none;
@@ -142,7 +149,7 @@ body {
       <p class="sub">AI 智慧職能應用培育課程 ─ 簽到系統</p>
     </div>
  
-    <div id="todayCourseCard"><div class="loading" style="text-align:center;padding:24px;color:#888;">載入中...</div></div>
+    <div id="todayCourseCard"></div>
  
     <div id="checkinForm" style="display:none;">
       <div class="form-group">
@@ -156,10 +163,11 @@ body {
           <div class="info-item">單位：<span id="dispUnit"></span></div>
           <div class="info-item">職稱：<span id="dispTitle"></span></div>
         </div>
+        <div id="dispBadge" class="badge"></div>
       </div>
  
       <div class="walkin-notice" id="walkinNotice">
-        🎉 歡迎參與！此人事號不在報名名單中，請填寫姓名與單位以完成簽到。
+        🎉 歡迎參與！查無此人事號，請填寫姓名與單位以完成簽到。
       </div>
  
       <div class="walkin-fields" id="walkinFields">
@@ -192,15 +200,105 @@ body {
  
 <script>
 // ===== Apps Script 部署網址 =====
-var API_URL = 'https://script.google.com/macros/s/AKfycbz3HKlXFa636rMdiOFALzpJ8ojBsJFBajgbLFNfqvzVE7bAcdiSKuIRIWtA3xuKuVPS/exec';
+var API_URL = 'https://script.google.com/macros/s/AKfycbyp7RgLjzTGXcz5YePjtQzbVl-myTbnM6I1SmiZFz3CwpfEhhXBa_G3nm1Yjn6yo9n9/exec';
  
-var ALL_COURSES = ['生成式 AI 工作術', '影音自造時代', '零程式碼革命'];
+// ===== 課程資訊 =====
+var COURSE_DATES = {
+  '生成式 AI 工作術': '2026/05/11',
+  '影音自造時代': '2026/07/09',
+  '零程式碼革命': '2026/07/23'
+};
+var COURSE_INFO = {
+  '生成式 AI 工作術': { desc: 'Prompt 技巧、個人助理、製作簡報、數據分析——用 AI 重塑日常工作流程。', rocDate: '115/06/04（週四）' },
+  '影音自造時代': { desc: '腳本生成、影音製作、虛擬應用——零基礎也能產出專業級影音內容。', rocDate: '115/07/09（週四）' },
+  '零程式碼革命': { desc: '資訊網頁、無代碼架設、整合應用——不寫程式也能打造數位工具。', rocDate: '115/07/23（週四）' }
+};
+ 
+// ===== 員工 Master 名單（67 人） =====
+var ROSTER = {
+  '740807': { name: '蕭蕙莉', unit: '血液透析護理', title: '護理長' },
+  '831221': { name: '方素秋', unit: '醫療事務室', title: '主任' },
+  '840220': { name: '李建成', unit: '品質管理中心', title: '專員' },
+  '840343': { name: '蘇春枝', unit: '急診室', title: '小組長' },
+  '840435': { name: '舒惠芳', unit: '放射診斷科', title: '醫師' },
+  '840536': { name: '林莉娟', unit: '醫療服務組', title: '組長' },
+  '840815': { name: '莊淑欽', unit: '申報業務組', title: '組長' },
+  '850142': { name: '謝淑芬', unit: '資材室-補給組', title: '副組長' },
+  '850771': { name: '謝佳芬', unit: '病歷資訊管理室', title: '組長' },
+  '850956': { name: '楊美珠', unit: '品質管理中心', title: '組長' },
+  '851215': { name: '陳惠琦', unit: '病歷資訊管理室', title: '小組長' },
+  '860548': { name: '莊蕙瑛', unit: '護理部', title: '護理師' },
+  '870525': { name: '李雅秋', unit: '公共事務室', title: '行政管理員' },
+  '8707A2': { name: '孔雅雯', unit: '護理部', title: '護理長' },
+  '8707A8': { name: '曾毓珍', unit: '人力資源部', title: '副組長' },
+  '880654': { name: '王秋蓮', unit: '住院服務組', title: '組長' },
+  '880968': { name: '林坤宏', unit: '工務室', title: '工務技術員' },
+  '900660': { name: '陳瑩純', unit: '護理部急診', title: '小組長' },
+  '900682': { name: '蔡佩君', unit: '醫療服務組', title: '小組長' },
+  '911044': { name: '李林富', unit: '復健科', title: '總技師' },
+  '911050': { name: '吳秀蒂', unit: '放射診斷科', title: '總技師' },
+  '911051': { name: '曾麗娥', unit: '急診室', title: '副護理長' },
+  '930378': { name: '黃小容', unit: '感染管制組', title: '小組長' },
+  '930684': { name: '陳妙玉', unit: '呼吸治療組', title: '組長' },
+  '9307W7': { name: '曾雅鈴', unit: '5A病房', title: '護理長' },
+  '9309AS': { name: '古慧珍', unit: '品質管理中心', title: '病安管理師' },
+  '940172': { name: '翁妙妃', unit: '社區整合服務中心', title: '個案管理師' },
+  '9403L6': { name: '張敬忠', unit: '物理治療組', title: '組長' },
+  '9407A1': { name: '曾瓊瑤', unit: '檢查室', title: '小組長' },
+  '961295': { name: '陳姿尹', unit: '護理部外科', title: '專科護理師' },
+  '970210': { name: '李晨毓', unit: '社區整合服務中心', title: '個案管理師' },
+  '971139': { name: '陳蕎誼', unit: '2樓加護病房', title: '護理師' },
+  '991086': { name: '陳淑瑛', unit: '社區整合服務中心', title: '個案管理師' },
+  'A00109': { name: '陳佳銘', unit: '總務室', title: '組長' },
+  'A00535': { name: '黃秀玲', unit: '企劃組', title: '組長' },
+  'A101W6': { name: '林欣蓁', unit: '教學研究組', title: '組長' },
+  'A104W7': { name: '蘇銘源', unit: '資訊室', title: '系統工程師' },
+  'A106W2': { name: '吳月華', unit: '資訊室', title: '資訊策略師' },
+  'A106Y5': { name: '林宜靜', unit: '5A病房', title: '小組長' },
+  'A112W1': { name: '黃柏豪', unit: '呼吸治療組', title: '小組長' },
+  'A201W3': { name: '黃惠萍', unit: '社區整合服務中心', title: '個案管理師' },
+  'A208W3': { name: '陳秀媚', unit: '社區整合服務中心', title: '個案管理師' },
+  'A306W2': { name: '劉怡姍', unit: '急診室', title: '小組長' },
+  'A307F2': { name: '傅瑋珍', unit: '社區整合服務中心', title: '個案管理師' },
+  'A307W4': { name: '陳佩君', unit: '社區整合服務中心', title: '個案管理師' },
+  'A30937': { name: '詹孟嘉', unit: '社區整合服務中心', title: '個案管理師' },
+  'A411W2': { name: '曾妍鳳', unit: '護理部內科', title: '小組長' },
+  'A412W5': { name: '鄭喬銨', unit: '教學研究組', title: '教學行政管理員' },
+  'A60228': { name: '陳德蓉', unit: '社區整合服務中心', title: '個案管理師' },
+  'A608W2': { name: '蔡雯斐', unit: '品質管理中心', title: '品質管理員' },
+  'A609W2': { name: '周燕君', unit: '社區整合服務中心', title: '個案管理師' },
+  'A702W1': { name: '郭志嘉', unit: '社區整合服務中心', title: '個案管理師' },
+  'A802W8': { name: '蘇佳馨', unit: '5A病房', title: '護理師' },
+  'A807Z4': { name: '鄭惠娟', unit: '護理部', title: '護理師' },
+  'A902Y1': { name: '徐敏馨', unit: '社區整合服務中心', title: '個案管理師' },
+  'A910W5': { name: '丁冠博', unit: '醫療服務組', title: '行政管理員' },
+  'B007W7': { name: '吳筱涵', unit: '社區整合服務中心', title: '個案管理師' },
+  'B104W9': { name: '施彥宇', unit: '資材室-補給組', title: '行政管理員' },
+  'B109W1': { name: '甘家綺', unit: '品質管理中心', title: '品質管理員' },
+  'B209W9': { name: '王又平', unit: '資訊室', title: '高級系統管理員' },
+  'B302W3': { name: '陳靜怡', unit: '品質管理中心', title: '品質管理元' },
+  'B303W9': { name: '吳雅惠', unit: '社區整合服務中心', title: '個案管理師' },
+  'B306W6': { name: '林思維', unit: '資材室-補給組', title: '行政管理員' },
+  'B310W9': { name: '石盈', unit: '檢驗科', title: '醫檢師' },
+  'B312W8': { name: '賴郁淳', unit: '社區整合服務中心', title: '個案管理師' },
+  'B401W4': { name: '許雅玲', unit: '社區發展組', title: '醫務管理員' },
+  'B408W7': { name: '莊于柔', unit: '社區整合服務中心', title: '個案管理師' }
+};
+ 
+// ===== 各場報名名單（人事號 set） =====
+var ENROLLED = {
+  '生成式 AI 工作術': { '740807': 1, '831221': 1, '840220': 1, '840343': 1, '840435': 1, '840536': 1, '840815': 1, '850142': 1, '850771': 1, '851215': 1, '860548': 1, '870525': 1, '880654': 1, '880968': 1, '900660': 1, '900682': 1, '911044': 1, '911050': 1, '911051': 1, '930378': 1, '930684': 1, '9307W7': 1, '9309AS': 1, '9403L6': 1, '9407A1': 1, '961295': 1, '970210': 1, '971139': 1, '991086': 1, 'A00109': 1, 'A00535': 1, 'A101W6': 1, 'A106W2': 1, 'A106Y5': 1, 'A112W1': 1, 'A306W2': 1, 'A307W4': 1, 'A30937': 1, 'A411W2': 1, 'A412W5': 1, 'A60228': 1, 'A802W8': 1, 'A902Y1': 1, 'A910W5': 1, 'B104W9': 1, 'B109W1': 1, 'B302W3': 1, 'B303W9': 1, 'B306W6': 1, 'B310W9': 1, 'B401W4': 1 },
+  '影音自造時代': { '740807': 1, '831221': 1, '840220': 1, '840343': 1, '840435': 1, '840536': 1, '840815': 1, '850142': 1, '850771': 1, '850956': 1, '851215': 1, '860548': 1, '870525': 1, '8707A2': 1, '8707A8': 1, '880654': 1, '880968': 1, '900660': 1, '900682': 1, '911044': 1, '911051': 1, '930378': 1, '930684': 1, '9307W7': 1, '9403L6': 1, '9407A1': 1, '961295': 1, '971139': 1, 'A00109': 1, 'A00535': 1, 'A101W6': 1, 'A104W7': 1, 'A106Y5': 1, 'A112W1': 1, 'A201W3': 1, 'A306W2': 1, 'A307F2': 1, 'A411W2': 1, 'A412W5': 1, 'A608W2': 1, 'A609W2': 1, 'A802W8': 1, 'A807Z4': 1, 'A910W5': 1, 'B104W9': 1, 'B109W1': 1, 'B302W3': 1, 'B306W6': 1, 'B312W8': 1, 'B408W7': 1 },
+  '零程式碼革命': { '740807': 1, '831221': 1, '840220': 1, '840343': 1, '840435': 1, '840536': 1, '840815': 1, '850142': 1, '850771': 1, '850956': 1, '851215': 1, '860548': 1, '870525': 1, '8707A2': 1, '8707A8': 1, '880654': 1, '880968': 1, '900660': 1, '900682': 1, '911044': 1, '911051': 1, '930378': 1, '930684': 1, '9307W7': 1, '9309AS': 1, '940172': 1, '9403L6': 1, '9407A1': 1, '961295': 1, 'A00109': 1, 'A00535': 1, 'A101W6': 1, 'A106Y5': 1, 'A112W1': 1, 'A208W3': 1, 'A306W2': 1, 'A307W4': 1, 'A608W2': 1, 'A702W1': 1, 'A802W8': 1, 'A807Z4': 1, 'A902Y1': 1, 'A910W5': 1, 'B007W7': 1, 'B104W9': 1, 'B109W1': 1, 'B209W9': 1, 'B302W3': 1, 'B306W6': 1, 'B312W8': 1 }
+};
+ 
+var ALL_COURSES = Object.keys(COURSE_DATES);
 var todayCourse = '';
 var currentInfo = null;
 var debounceTimer = null;
  
-// ===== JSONP 呼叫（避開 fetch 的 CORS 問題） =====
-function callAPI(params, callback) {
+// ===== JSONP 呼叫（含自動重試一次） =====
+function callAPIOnce(params, callback) {
   var cbName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
   var timeoutId;
   var done = false;
@@ -219,9 +317,9 @@ function callAPI(params, callback) {
     if (s && s.parentNode) s.parentNode.removeChild(s);
   }
  
-  params.callback = cbName;
-  var qs = Object.keys(params).map(function(k) {
-    return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+  var qsParams = Object.assign({}, params, { callback: cbName });
+  var qs = Object.keys(qsParams).map(function(k) {
+    return encodeURIComponent(k) + '=' + encodeURIComponent(qsParams[k]);
   }).join('&');
  
   var script = document.createElement('script');
@@ -240,18 +338,41 @@ function callAPI(params, callback) {
     done = true;
     callback(new Error('Timeout'), null);
     cleanup();
-  }, 15000);
+  }, 12000);
  
   document.body.appendChild(script);
 }
  
-// 初始化：取得今日課程
-callAPI({ action: 'getTodayCourse' }, function(err, result) {
-  var card = document.getElementById('todayCourseCard');
-  if (err) {
-    card.innerHTML = '<div class="no-course">無法連線伺服器</div>';
-    return;
+function callAPI(params, callback) {
+  callAPIOnce(params, function(err, data) {
+    if (err) {
+      setTimeout(function() {
+        callAPIOnce(params, callback);
+      }, 500);
+    } else {
+      callback(null, data);
+    }
+  });
+}
+ 
+// ===== 前端判斷今日課程 =====
+function getTodayCourseLocal() {
+  var d = new Date();
+  var today = d.getFullYear() + '/' +
+    String(d.getMonth() + 1).padStart(2, '0') + '/' +
+    String(d.getDate()).padStart(2, '0');
+  for (var i = 0; i < ALL_COURSES.length; i++) {
+    if (COURSE_DATES[ALL_COURSES[i]] === today) {
+      var info = COURSE_INFO[ALL_COURSES[i]];
+      return { found: true, name: ALL_COURSES[i], desc: info.desc, rocDate: info.rocDate };
+    }
   }
+  return { found: false };
+}
+ 
+(function initTodayCourse() {
+  var card = document.getElementById('todayCourseCard');
+  var result = getTodayCourseLocal();
   if (result.found) {
     todayCourse = result.name;
     card.innerHTML = '<div class="today-course">'
@@ -261,10 +382,11 @@ callAPI({ action: 'getTodayCourse' }, function(err, result) {
       + '<div class="date">' + result.rocDate + '</div>'
       + '</div>';
     document.getElementById('checkinForm').style.display = 'block';
+    callAPIOnce({ action: 'ping' }, function() {});
   } else {
     card.innerHTML = '<div class="no-course">今日無課程，無需簽到</div>';
   }
-});
+})();
  
 var empIdInput = document.getElementById('empId');
 empIdInput.addEventListener('input', function() {
@@ -272,7 +394,7 @@ empIdInput.addEventListener('input', function() {
   var val = empIdInput.value.trim();
   resetUI();
   if (val.length >= 4) {
-    debounceTimer = setTimeout(function() { doLookup(val); }, 300);
+    doLookup(val);
   }
 });
  
@@ -283,27 +405,46 @@ function resetUI() {
   document.getElementById('walkinFields').style.display = 'none';
   document.getElementById('submitBtn').style.display = 'none';
   document.getElementById('resultMsg').style.display = 'none';
+  document.getElementById('dispBadge').style.display = 'none';
 }
  
+// ===== Lookup 邏輯：員工資料 + 今日報名狀態 =====
 function doLookup(val) {
-  callAPI({ action: 'lookup', empId: val }, function(err, result) {
-    if (err) { showResult('查詢失敗', false); return; }
-    if (result.found) {
-      currentInfo = result;
-      document.getElementById('dispName').textContent = result.name;
-      document.getElementById('dispUnit').textContent = result.unit;
-      document.getElementById('dispTitle').textContent = result.title;
-      document.getElementById('infoBar').style.display = 'block';
+  var key = val.toUpperCase().trim();
+  var info = ROSTER[key];
+  var badge = document.getElementById('dispBadge');
+ 
+  if (info) {
+    // 找到員工資料
+    var isEnrolled = !!(todayCourse && ENROLLED[todayCourse] && ENROLLED[todayCourse][key]);
+    currentInfo = { found: true, enrolled: isEnrolled, name: info.name, unit: info.unit, title: info.title };
+ 
+    document.getElementById('dispName').textContent = info.name;
+    document.getElementById('dispUnit').textContent = info.unit;
+    document.getElementById('dispTitle').textContent = info.title;
+    document.getElementById('infoBar').style.display = 'block';
+ 
+    if (isEnrolled) {
+      badge.textContent = '✓ 已報名';
+      badge.className = 'badge enrolled';
     } else {
-      currentInfo = { found: false };
-      document.getElementById('walkinNotice').style.display = 'block';
-      document.getElementById('walkinFields').style.display = 'block';
+      badge.textContent = '⚠ 不在今日報名名單（將以現場參與身份簽到）';
+      badge.className = 'badge walkin';
     }
-    document.getElementById('submitBtn').style.display = 'block';
-  });
+    badge.style.display = 'inline-block';
+  } else {
+    // 完全找不到，需要手填
+    currentInfo = { found: false, enrolled: false };
+    document.getElementById('walkinNotice').style.display = 'block';
+    document.getElementById('walkinFields').style.display = 'block';
+  }
+  document.getElementById('submitBtn').style.display = 'block';
 }
  
 function doCheckIn() {
+  var btn = document.getElementById('submitBtn');
+  if (btn.disabled) return;
+ 
   var empId = document.getElementById('empId').value.trim();
   if (!empId) { showResult('請輸入人事號', false); return; }
  
@@ -318,10 +459,14 @@ function doCheckIn() {
   };
  
   if (currentInfo && currentInfo.found) {
+    // 有員工資料
     params.name = currentInfo.name;
     params.unit = currentInfo.unit;
     params.title = currentInfo.title;
+    // 沒在今日報名名單 → 仍標示為現場參與
+    params.isWalkIn = currentInfo.enrolled ? 'false' : 'true';
   } else {
+    // 完全外部訪客
     params.isWalkIn = 'true';
     params.name = document.getElementById('walkinName').value.trim();
     params.unit = document.getElementById('walkinUnit').value.trim();
@@ -331,7 +476,6 @@ function doCheckIn() {
     }
   }
  
-  var btn = document.getElementById('submitBtn');
   btn.disabled = true;
   btn.textContent = '簽到中...';
  
@@ -343,13 +487,17 @@ function doCheckIn() {
       return;
     }
     showResult(result.message, result.success);
-    btn.disabled = false;
-    btn.textContent = '簽 到';
     if (result.success) {
       document.getElementById('empId').value = '';
-      resetUI();
-      empIdInput.focus();
-      openAttendanceModal();
+      setTimeout(function() {
+        btn.disabled = false;
+        btn.textContent = '簽 到';
+        resetUI();
+        empIdInput.focus();
+      }, 1500);
+    } else {
+      btn.disabled = false;
+      btn.textContent = '簽 到';
     }
   });
 }
